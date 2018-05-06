@@ -49,7 +49,8 @@ function buildReplyMsg(word){
                     }
                   ]
 
-  Promise.all([dictApi.getDefinition(word), dictApi.getSynonym(word)])
+
+  return Promise.all([dictApi.getDefinition(word), dictApi.getSynonym(word)])
   .then(function (res) {
     replyMsg.push(
       {
@@ -63,7 +64,6 @@ function buildReplyMsg(word){
         text: "synonym : " + res[1]
       }
     );
-     eval(pry.it)
     return replyMsg
   })
 }
