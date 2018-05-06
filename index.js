@@ -3,8 +3,8 @@
 
 const line = require('@line/bot-sdk');
 const express = require('express');
-const dictApi = require('./lib/dict-api')
-
+const dictApi = require('./lib/dict-api');
+var Promise = require('promise');
 var dotenv = require('dotenv');
 dotenv.load();
 
@@ -26,25 +26,46 @@ app.post('/callback', line.middleware(config), (req, res) => {
 function handleEvent(event) {
   if (event.type === 'message' && event.message.text) {
     var word = event.message.text
+    var promise = new Promise(function (resolve, reject) {
+      resolve(buildReplyMsg(word));
+    });
 
-    dictApi.getDefinition(word, function(definition){
-      if(!definition){
-        definition = "Error"
-      }
-      return client.replyMessage(event.replyToken,
-        [
-          {
-            type: 'text',
-            text: "query : " + word
-          },
-          {
-            type: 'text',
-            text: "definition : " + definition
-          },
-        ]
-      );
-    })
+    promise.then(function(result){
+      reply(event.replyToken,result)
+    });
+
   }
+}
+
+function reply(token, replyMsg){
+  return client.replyMessage(token, replyMsg);
+}
+
+function buildReplyMsg(word){
+  var replyMsg =  [
+                    {
+                      type: 'text',
+                      text: "query : " + word
+                    }
+                  ]
+
+
+  return Promise.all([dictApi.getDefinition(word), dictApi.getSynonym(word)])
+  .then(function (res) {
+    replyMsg.push(
+      {
+        type: 'text',
+        text: "definition : " + res[0]
+      }
+    );
+    replyMsg.push(
+      {
+        type: 'text',
+        text: "synonym : " + res[1]
+      }
+    );
+    return replyMsg
+  })
 }
 
 app.listen(process.env.PORT || 3000);
